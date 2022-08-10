@@ -1,0 +1,267 @@
+/**
+ * MIT License
+ * Copyright (c) 2022 lim-kim930
+ * 
+ * 算法参考 Luma -《纯真IP数据库格式详解》
+ * https://developer.aliyun.com/article/365659
+ * https://zhuanlan.zhihu.com/p/360624952
+ * 
+ * 代码来源
+ * https://github.com/cnwhy/lib-qqwry
+ * 
+ * 抽离出文件读取部分的代码，使用Ts部分改写
+ */
+
+import fs from "fs";
+import { decode } from "gbk.js"
+
+interface locData {
+    country?: string;
+    isp?: string
+}
+
+interface ipData extends locData {
+    start_ip: string;
+    start_ip_int: number;
+}
+
+// interface searchIP {
+//     (ip: string, withNext: false): ipData;
+//     (ip: string, withNext: true): { data: ipData, next: number };
+// }
+
+enum RedirectMode {
+    Mode1 = 1,
+    Mode2 = 2
+}
+
+const IP_RECORD_LENGTH = 7;
+const IP_REGEXP = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+
+class LimQqwry {
+    ipBegin: number;
+    ipEnd: number;
+    version: undefined | string;
+    private cmd: {
+        readBuffer: (start: number, length: number) => Buffer;
+        readUIntLE: (start: number, length: number) => number;
+        getStringByteArray: (start: number) => number[];
+    };
+    constructor(path: string) {
+        // 闭包
+        this.cmd = bufferCmd(path)();
+        this.ipBegin = this.cmd.readUIntLE(0, 4);
+        this.ipEnd = this.cmd.readUIntLE(4, 4);
+    }
+
+    searchIP(ip: number, withNext = false) {
+        // g为该ip的索引在索引区的起始位置
+        const g = this.LocateIP(ip);
+        if (g == -1) {
+            return { int: ip, ip: intToIP(ip), Country: "", isp: "" };
+        }
+        const { loc, next } = this.setIPLocation(g);
+        // closeData.call(this);
+        // dbug && log(loc);
+        let data: ipData;
+        if (ip === 4294967040) {
+            data = {
+                start_ip: "255.255.255.0",
+                start_ip_int: 4294967040,
+                country: "IANA",
+                isp: "保留地址"
+            }
+        } else {
+            data = {
+                start_ip: intToIP(ip),
+                start_ip_int: ip,
+                ...loc
+            }
+        }
+        return withNext ? { data, next } : data;
+    }
+
+    toJson() {
+        let ip = 1
+        let result: ipData[] = []
+
+        while (ip < 4294967295) {
+            const { data, next } = this.searchIP(ip, true) as { data: ipData, next: number };
+            if (!next) {
+                throw new Error("next error");
+            }
+            result.push(data);
+            ip = next;
+        }
+
+        return result;
+    }
+
+    //2分法查找指定的IP偏移
+    private LocateIP(ip: number) {
+        let g: number, temp;
+        for (let b = this.ipBegin, e = this.ipEnd; b < e;) {
+            g = GetMiddleOffset(b, e, IP_RECORD_LENGTH); //获取中间位置
+            temp = this.cmd.readUIntLE(g, 4);
+
+            if (ip > temp) {
+                b = g;
+            } else if (ip < temp) {
+                if (g == e) {
+                    g -= IP_RECORD_LENGTH;
+                    break;
+                }
+                e = g;
+            } else {
+                break;
+            }
+        }
+        // if (dbug) {
+        //     var begip = this.cmd.readUIntLE(g, 4);
+        //     endip = this.cmd.readUIntLE(this.cmd.readUIntLE(g, 3), 4); //获取结束IP的值
+        //     log(exports.intToIP(ip) + ' >> ' + ip);
+        //     log('>> Indexes as "' + g + '" ( ' + begip + ' --> ' + endip + ' )');
+        //     if (ip > endip) {
+        //         //与结束IP比较；正常情况不会出现这种情况,除非IP库漏掉了一些IP;
+        //         return -1;
+        //     }
+        // }
+        return g!;
+    }
+
+    //获取IP地址对应区域
+    private setIPLocation(g: number) {
+
+        // 拿到该ip的偏移量，即在记录区的起始位置
+        // this.cmd.readUIntLE(g + 4, 3)
+        // 终止ip
+        const next = this.cmd.readUIntLE(this.cmd.readUIntLE(g + 4, 3), 4) + 1;
+
+        let ipwz = this.cmd.readUIntLE(g + 4, 3) + 4;
+        // 在这种格式下，终止IP后跟有一个重定向标志 0x01
+        // 由于正常存储的字符串不会以0x01开头，因此可以与格式1区分开。
+        let lx = this.cmd.readUIntLE(ipwz, 1),
+            loc: locData = {};
+        if (lx == RedirectMode.Mode1) {
+            //Country根据标识再判断
+            ipwz = this.cmd.readUIntLE(ipwz + 1, 3); //读取国家偏移`
+            lx = this.cmd.readUIntLE(ipwz, 1); //再次获取标识字节
+
+            let Gjbut: number[];
+            if (lx == RedirectMode.Mode2) {
+                //再次检查标识字节
+                Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
+                loc.country = decode(Gjbut);
+                // loc.Country = Gjbut.toString();
+                ipwz = ipwz + 4;
+            } else {
+                Gjbut = this.cmd.getStringByteArray(ipwz);
+                loc.country = decode(Gjbut);
+                // loc.Country = Gjbut.toString();
+                ipwz += Gjbut.length + 1;
+            }
+            loc.isp = this.ReadISP(ipwz);
+        } else if (lx == RedirectMode.Mode2) {
+            //Country直接读取偏移处字符串
+            const Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
+            loc.country = decode(Gjbut);
+            // loc.Country = Gjbut.toString();
+            loc.isp = this.ReadISP(ipwz + 4);
+        } else {
+            //Country直接读取 Area根据标志再判断
+            const Gjbut = this.cmd.getStringByteArray(ipwz);
+            ipwz += Gjbut.length + 1;
+            loc.country = decode(Gjbut);
+            // loc.Country = Gjbut.toString();
+            loc.isp = this.ReadISP(ipwz);
+        }
+        return { loc, next };
+    }
+
+    //读取ISP
+    private ReadISP(offset: number) {
+        const one = this.cmd.readUIntLE(offset, 1);
+        if (one == RedirectMode.Mode1 || one == RedirectMode.Mode2) {
+            const areaOffset = this.cmd.readUIntLE(offset + 1, 3);
+            if (areaOffset == 0) return "Unknown";
+            offset = areaOffset;
+        }
+        const array = this.cmd.getStringByteArray(offset)
+        if (array.length === 9 && array[3] === 56) {
+            return "Unknown";
+        }
+        return decode(array);
+    }
+}
+
+function bufferCmd(path: string) {
+    const buffer = fs.readFileSync(path);
+    const max = buffer.length;
+    const api = {
+        readBuffer: function (start: number, length: number) {
+            start = start || 0;
+            length = length || 1;
+            return buffer.slice(start, start + length);
+        },
+        readUIntLE: function (start: number, length: number) {
+            start = start || 0;
+            length = length < 1 ? 1 : length > 6 ? 6 : length;
+            return buffer.readUIntLE(start, length);
+        },
+        getStringByteArray: function (start: number) {
+            const B = start || 0;
+            const toarr = [];
+            for (let i = B; i < max; i++) {
+                const s = buffer[i];
+                if (s === 0) break;
+                toarr.push(s);
+            }
+            return toarr;
+        }
+    };
+    return function bufferCmd() {
+        return api;
+    };
+}
+
+// 取得begin和end中间的偏移(用于2分法查询);
+function GetMiddleOffset(begin: number, end: number, recordLength: number) {
+    const records = (((end - begin) / recordLength) >> 1) * recordLength + begin;
+    return records ^ begin ? records : records + recordLength;
+}
+
+function ipToInt(IP: string) {
+    const result = IP_REGEXP.exec(IP);
+    let ip: number;
+    if (result) {
+        const ip_Arr = result.slice(1);
+        ip =
+            ((parseInt(ip_Arr[0]) << 24) |
+                (parseInt(ip_Arr[1]) << 16) |
+                (parseInt(ip_Arr[2]) << 8) |
+                parseInt(ip_Arr[3])) >>>
+            0;
+    } else if (/^\d+$/.test(IP) && (ip = parseInt(IP)) >= 0 && ip <= 0xffffffff) {
+        ip = +IP;
+    } else {
+        throw 'The IP address is not normal! >> ' + IP;
+    }
+    return ip;
+}
+
+function intToIP(int: number) {
+    if (int < 0 || int > 0xffffffff) {
+        throw 'The IP number is not normal! >> ' + int;
+    }
+    return (
+        (int >>> 24) +
+        '.' +
+        ((int >>> 16) & 0xff) +
+        '.' +
+        ((int >>> 8) & 0xff) +
+        '.' +
+        ((int >>> 0) & 0xff)
+    );
+}
+
+export default LimQqwry;
