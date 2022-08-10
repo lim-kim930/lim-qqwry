@@ -26,6 +26,8 @@ var __assign = (this && this.__assign) || function () {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.toJson = exports.LimQqwry = void 0;
 var fs_1 = __importDefault(require("fs"));
 var gbk_js_1 = require("gbk.js");
 // interface searchIP {
@@ -182,6 +184,7 @@ var LimQqwry = /** @class */ (function () {
     };
     return LimQqwry;
 }());
+exports.LimQqwry = LimQqwry;
 function bufferCmd(path) {
     var buffer = fs_1.default.readFileSync(path);
     var max = buffer.length;
@@ -249,4 +252,8 @@ function intToIP(int) {
         '.' +
         ((int >>> 0) & 0xff));
 }
-module.exports = LimQqwry;
+function toJson(path) {
+    var instance = new LimQqwry(path);
+    return instance.toJson();
+}
+exports.toJson = toJson;

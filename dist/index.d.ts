@@ -45,4 +45,5 @@ declare class LimQqwry {
     private setIPLocation;
     private ReadISP;
 }
-export = LimQqwry;
+declare function toJson(path: string): ipData[];
+export { LimQqwry, toJson };

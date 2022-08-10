@@ -1,4 +1,4 @@
-const LimQqwry = require("../dist")
+const { LimQqwry, toJson } = require("../dist")
 const path = require("path")
 const fs = require("fs")
 
@@ -14,7 +14,7 @@ console.log(ipdata);
 console.timeEnd("time_single_search");
 
 console.time("time_to_json");
-const result = qqwry.toJson();
+const result = toJson(datapath);
 fs.writeFile("./data.json", JSON.stringify(result), () => {
     console.timeEnd("time_to_json");
 });

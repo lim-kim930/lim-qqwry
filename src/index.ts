@@ -267,4 +267,9 @@ function intToIP(int: number) {
     );
 }
 
-export = LimQqwry;
+function toJson(path: string) {
+    const instance = new LimQqwry(path);
+    return instance.toJson();
+}
+
+export { LimQqwry, toJson };
