@@ -1,121 +1,108 @@
+"use strict";
 /**
  * MIT License
  * Copyright (c) 2022 lim-kim930
- * 
+ *
  * 算法参考 Luma -《纯真IP数据库格式详解》
  * https://developer.aliyun.com/article/365659
  * https://zhuanlan.zhihu.com/p/360624952
- * 
+ *
  * 代码来源
  * https://github.com/cnwhy/lib-qqwry
- * 
+ *
  * 抽离出文件读取部分的代码，使用Ts部分改写
  */
-
-import fs from "fs";
-import { decode } from "gbk.js"
-
-interface locData {
-    country?: string;
-    isp?: string
-}
-
-interface ipData extends locData {
-    start_ip: string;
-    start_ip_int: number;
-}
-
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var fs_1 = __importDefault(require("fs"));
+var gbk_js_1 = require("gbk.js");
 // interface searchIP {
 //     (ip: string, withNext: false): ipData;
 //     (ip: string, withNext: true): { data: ipData, next: number };
 // }
-
-enum RedirectMode {
-    Mode1 = 1,
-    Mode2 = 2
-}
-
-const IP_RECORD_LENGTH = 7;
-const IP_REGEXP = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
-
-class LimQqwry {
-    ipBegin: number;
-    ipEnd: number;
-    version: undefined | string;
-    private cmd: {
-        readBuffer: (start: number, length: number) => Buffer;
-        readUIntLE: (start: number, length: number) => number;
-        getStringByteArray: (start: number) => number[];
-    };
-    constructor(path: string) {
+var RedirectMode;
+(function (RedirectMode) {
+    RedirectMode[RedirectMode["Mode1"] = 1] = "Mode1";
+    RedirectMode[RedirectMode["Mode2"] = 2] = "Mode2";
+})(RedirectMode || (RedirectMode = {}));
+var IP_RECORD_LENGTH = 7;
+var IP_REGEXP = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+var LimQqwry = /** @class */ (function () {
+    function LimQqwry(path) {
         // 闭包
         this.cmd = bufferCmd(path)();
         this.ipBegin = this.cmd.readUIntLE(0, 4);
         this.ipEnd = this.cmd.readUIntLE(4, 4);
     }
-
-    searchIP(ip: number | string, withNext = false) {
+    LimQqwry.prototype.searchIP = function (ip, withNext) {
+        if (withNext === void 0) { withNext = false; }
         if (typeof ip === "string") {
             ip = ipToInt(ip);
         }
         // g为该ip的索引在索引区的起始位置
-        const g = this.LocateIP(ip);
+        var g = this.LocateIP(ip);
         if (g == -1) {
             return { int: ip, ip: intToIP(ip), Country: "", isp: "" };
         }
-        const { loc, next } = this.setIPLocation(g);
+        var _a = this.setIPLocation(g), loc = _a.loc, next = _a.next;
         // closeData.call(this);
         // dbug && log(loc);
-        let data: ipData;
+        var data;
         if (ip === 4294967040) {
             data = {
                 start_ip: "255.255.255.0",
                 start_ip_int: 4294967040,
                 country: "IANA",
                 isp: "保留地址"
-            }
-        } else {
-            data = {
-                start_ip: intToIP(ip),
-                start_ip_int: ip,
-                ...loc
-            }
+            };
         }
-        return withNext ? { data, next } : data;
-    }
-
-    toJson() {
-        let ip = 1
-        let result: ipData[] = []
-
+        else {
+            data = __assign({ start_ip: intToIP(ip), start_ip_int: ip }, loc);
+        }
+        return withNext ? { data: data, next: next } : data;
+    };
+    LimQqwry.prototype.toJson = function () {
+        var ip = 1;
+        var result = [];
         while (ip < 4294967295) {
-            const { data, next } = this.searchIP(ip, true) as { data: ipData, next: number };
+            var _a = this.searchIP(ip, true), data = _a.data, next = _a.next;
             if (!next) {
                 throw new Error("next error");
             }
             result.push(data);
             ip = next;
         }
-
         return result;
-    }
-
+    };
     //2分法查找指定的IP偏移
-    private LocateIP(ip: number) {
-        let g: number, temp;
-        for (let b = this.ipBegin, e = this.ipEnd; b < e;) {
+    LimQqwry.prototype.LocateIP = function (ip) {
+        var g, temp;
+        for (var b = this.ipBegin, e = this.ipEnd; b < e;) {
             g = GetMiddleOffset(b, e, IP_RECORD_LENGTH); //获取中间位置
             temp = this.cmd.readUIntLE(g, 4);
-
             if (ip > temp) {
                 b = g;
-            } else if (ip < temp) {
+            }
+            else if (ip < temp) {
                 if (g == e) {
                     g -= IP_RECORD_LENGTH;
                     break;
                 }
                 e = g;
-            } else {
+            }
+            else {
                 break;
             }
         }
@@ -129,94 +116,93 @@ class LimQqwry {
         //         return -1;
         //     }
         // }
-        return g!;
-    }
-
+        return g;
+    };
     //获取IP地址对应区域
-    private setIPLocation(g: number) {
-
+    LimQqwry.prototype.setIPLocation = function (g) {
         // 拿到该ip的偏移量，即在记录区的起始位置
         // this.cmd.readUIntLE(g + 4, 3)
         // 终止ip
-        const next = this.cmd.readUIntLE(this.cmd.readUIntLE(g + 4, 3), 4) + 1;
-
-        let ipwz = this.cmd.readUIntLE(g + 4, 3) + 4;
+        var next = this.cmd.readUIntLE(this.cmd.readUIntLE(g + 4, 3), 4) + 1;
+        var ipwz = this.cmd.readUIntLE(g + 4, 3) + 4;
         // 在这种格式下，终止IP后跟有一个重定向标志 0x01
         // 由于正常存储的字符串不会以0x01开头，因此可以与格式1区分开。
-        let lx = this.cmd.readUIntLE(ipwz, 1),
-            loc: locData = {};
+        var lx = this.cmd.readUIntLE(ipwz, 1), loc = {};
         if (lx == RedirectMode.Mode1) {
             //Country根据标识再判断
             ipwz = this.cmd.readUIntLE(ipwz + 1, 3); //读取国家偏移`
             lx = this.cmd.readUIntLE(ipwz, 1); //再次获取标识字节
-
-            let Gjbut: number[];
+            var Gjbut = void 0;
             if (lx == RedirectMode.Mode2) {
                 //再次检查标识字节
                 Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
-                loc.country = decode(Gjbut);
+                loc.country = (0, gbk_js_1.decode)(Gjbut);
                 // loc.Country = Gjbut.toString();
                 ipwz = ipwz + 4;
-            } else {
+            }
+            else {
                 Gjbut = this.cmd.getStringByteArray(ipwz);
-                loc.country = decode(Gjbut);
+                loc.country = (0, gbk_js_1.decode)(Gjbut);
                 // loc.Country = Gjbut.toString();
                 ipwz += Gjbut.length + 1;
             }
             loc.isp = this.ReadISP(ipwz);
-        } else if (lx == RedirectMode.Mode2) {
+        }
+        else if (lx == RedirectMode.Mode2) {
             //Country直接读取偏移处字符串
-            const Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
-            loc.country = decode(Gjbut);
+            var Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
+            loc.country = (0, gbk_js_1.decode)(Gjbut);
             // loc.Country = Gjbut.toString();
             loc.isp = this.ReadISP(ipwz + 4);
-        } else {
+        }
+        else {
             //Country直接读取 Area根据标志再判断
-            const Gjbut = this.cmd.getStringByteArray(ipwz);
+            var Gjbut = this.cmd.getStringByteArray(ipwz);
             ipwz += Gjbut.length + 1;
-            loc.country = decode(Gjbut);
+            loc.country = (0, gbk_js_1.decode)(Gjbut);
             // loc.Country = Gjbut.toString();
             loc.isp = this.ReadISP(ipwz);
         }
-        return { loc, next };
-    }
-
+        return { loc: loc, next: next };
+    };
     //读取ISP
-    private ReadISP(offset: number) {
-        const one = this.cmd.readUIntLE(offset, 1);
+    LimQqwry.prototype.ReadISP = function (offset) {
+        var one = this.cmd.readUIntLE(offset, 1);
         if (one == RedirectMode.Mode1 || one == RedirectMode.Mode2) {
-            const areaOffset = this.cmd.readUIntLE(offset + 1, 3);
-            if (areaOffset == 0) return "Unknown";
+            var areaOffset = this.cmd.readUIntLE(offset + 1, 3);
+            if (areaOffset == 0)
+                return "Unknown";
             offset = areaOffset;
         }
-        const array = this.cmd.getStringByteArray(offset)
+        var array = this.cmd.getStringByteArray(offset);
         if (array.length === 9 && array[3] === 56) {
             return "Unknown";
         }
-        return decode(array);
-    }
-}
-
-function bufferCmd(path: string) {
-    const buffer = fs.readFileSync(path);
-    const max = buffer.length;
-    const api = {
-        readBuffer: function (start: number, length: number) {
+        return (0, gbk_js_1.decode)(array);
+    };
+    return LimQqwry;
+}());
+function bufferCmd(path) {
+    var buffer = fs_1.default.readFileSync(path);
+    var max = buffer.length;
+    var api = {
+        readBuffer: function (start, length) {
             start = start || 0;
             length = length || 1;
             return buffer.slice(start, start + length);
         },
-        readUIntLE: function (start: number, length: number) {
+        readUIntLE: function (start, length) {
             start = start || 0;
             length = length < 1 ? 1 : length > 6 ? 6 : length;
             return buffer.readUIntLE(start, length);
         },
-        getStringByteArray: function (start: number) {
-            const B = start || 0;
-            const toarr = [];
-            for (let i = B; i < max; i++) {
-                const s = buffer[i];
-                if (s === 0) break;
+        getStringByteArray: function (start) {
+            var B = start || 0;
+            var toarr = [];
+            for (var i = B; i < max; i++) {
+                var s = buffer[i];
+                if (s === 0)
+                    break;
                 toarr.push(s);
             }
             return toarr;
@@ -226,45 +212,41 @@ function bufferCmd(path: string) {
         return api;
     };
 }
-
 // 取得begin和end中间的偏移(用于2分法查询);
-function GetMiddleOffset(begin: number, end: number, recordLength: number) {
-    const records = (((end - begin) / recordLength) >> 1) * recordLength + begin;
+function GetMiddleOffset(begin, end, recordLength) {
+    var records = (((end - begin) / recordLength) >> 1) * recordLength + begin;
     return records ^ begin ? records : records + recordLength;
 }
-
-function ipToInt(IP: string) {
-    const result = IP_REGEXP.exec(IP);
-    let ip: number;
+function ipToInt(IP) {
+    var result = IP_REGEXP.exec(IP);
+    var ip;
     if (result) {
-        const ip_Arr = result.slice(1);
+        var ip_Arr = result.slice(1);
         ip =
             ((parseInt(ip_Arr[0]) << 24) |
                 (parseInt(ip_Arr[1]) << 16) |
                 (parseInt(ip_Arr[2]) << 8) |
                 parseInt(ip_Arr[3])) >>>
-            0;
-    } else if (/^\d+$/.test(IP) && (ip = parseInt(IP)) >= 0 && ip <= 0xffffffff) {
+                0;
+    }
+    else if (/^\d+$/.test(IP) && (ip = parseInt(IP)) >= 0 && ip <= 0xffffffff) {
         ip = +IP;
-    } else {
+    }
+    else {
         throw 'The IP address is not normal! >> ' + IP;
     }
     return ip;
 }
-
-function intToIP(int: number) {
+function intToIP(int) {
     if (int < 0 || int > 0xffffffff) {
         throw 'The IP number is not normal! >> ' + int;
     }
-    return (
-        (int >>> 24) +
+    return ((int >>> 24) +
         '.' +
         ((int >>> 16) & 0xff) +
         '.' +
         ((int >>> 8) & 0xff) +
         '.' +
-        ((int >>> 0) & 0xff)
-    );
+        ((int >>> 0) & 0xff));
 }
-
-export = LimQqwry;
+module.exports = LimQqwry;
