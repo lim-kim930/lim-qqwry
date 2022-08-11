@@ -272,4 +272,5 @@ function toJson(path: string) {
     return instance.toJson();
 }
 
-export { LimQqwry, toJson };
+export { toJson };
+export default LimQqwry;

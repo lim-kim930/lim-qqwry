@@ -1,6 +1,6 @@
-const { LimQqwry, toJson } = require("../dist")
-const path = require("path")
-const fs = require("fs")
+import LimQqwry, { toJson } from "../dist";
+import path from "path";
+import fs from "fs";
 
 const datapath = path.join(__dirname, './qqwry.dat');
 
