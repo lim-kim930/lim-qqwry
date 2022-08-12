@@ -287,5 +287,5 @@ function toJson(path: string) {
     return instance.toJson();
 }
 
-export { toJson };
+export { toJson, ipToInt, intToIP };
 export default LimQqwry;

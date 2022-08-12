@@ -1,3 +1,6 @@
+test/data.json
+test/*.dat
+
 # Logs
 logs
 *.log

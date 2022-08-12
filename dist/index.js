@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toJson = void 0;
+exports.intToIP = exports.ipToInt = exports.toJson = void 0;
 const fs_1 = __importDefault(require("fs"));
 const gbk_js_1 = require("gbk.js");
 var RedirectMode;
@@ -193,6 +193,7 @@ function ipToInt(IP) {
     }
     return ip;
 }
+exports.ipToInt = ipToInt;
 function intToIP(int) {
     if (int < 0 || int > 0xffffffff) {
         throw 'The IP number is not normal! >> ' + int;
@@ -205,6 +206,7 @@ function intToIP(int) {
         '.' +
         ((int >>> 0) & 0xff));
 }
+exports.intToIP = intToIP;
 function toJson(path) {
     const instance = new LimQqwry(path);
     return instance.toJson();

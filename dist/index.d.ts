@@ -33,6 +33,8 @@ declare class LimQqwry {
     private setIPLocation;
     private ReadISP;
 }
+declare function ipToInt(IP: string): number;
+declare function intToIP(int: number): string;
 declare function toJson(path: string): ipData[];
-export { toJson };
+export { toJson, ipToInt, intToIP };
 export default LimQqwry;
