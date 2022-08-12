@@ -16,7 +16,7 @@ npm install lim-qqwry
 
 ## Example
 
-```
+```javascript
 import LimQqwry, { toJson } from "../dist";
 import path from "path";
 import fs from "fs";
