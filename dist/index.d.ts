@@ -21,7 +21,7 @@ declare class LimQqwry {
         next: number;
     };
     toJson(): ipData[];
-    getStartIpIntlist(): number[];
+    getStartIpIntList(): number[];
     private LocateIP;
     private getIPLocation;
     private ReadISP;

@@ -70,7 +70,7 @@ class LimQqwry {
         }
         return result;
     }
-    getStartIpIntlist() {
+    getStartIpIntList() {
         let ip = 0;
         let result = [];
         while (ip < 4294967295) {

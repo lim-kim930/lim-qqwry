@@ -119,7 +119,7 @@ class LimQqwry {
         return result;
     }
 
-    getStartIpIntlist() {
+    getStartIpIntList() {
         let ip = 0;
         let result: number[] = [];
 
