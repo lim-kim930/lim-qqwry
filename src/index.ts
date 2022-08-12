@@ -16,13 +16,17 @@ import fs from "fs";
 import { decode } from "gbk.js"
 
 interface locData {
-    country?: string;
-    isp?: string
+    country: string;
+    isp: string
 }
 
 interface ipData extends locData {
     start_ip: string;
     start_ip_int: number;
+}
+
+interface ipResponse extends locData {
+    ip: string;
 }
 
 // interface searchIP {
@@ -57,9 +61,9 @@ class LimQqwry {
 
     private getVersion() {
         const g = this.LocateIP(4294967295);
-        const { loc } = this.setIPLocation(g);
+        const { loc } = this.getIPLocation(g);
         let version = "v";
-        if(!loc.isp) {
+        if (!loc.isp) {
             version = "unknown"
         } else {
             const firstTemp = loc.isp.split("年");
@@ -76,9 +80,9 @@ class LimQqwry {
         // g为该ip的索引在索引区的起始位置
         const g = this.LocateIP(ip);
         if (g == -1) {
-            return { int: ip, ip: intToIP(ip), Country: "", isp: "" };
+            return { start_ip: intToIP(ip), start_ip_int: ip, country: "unknown", isp: "unknown" } as ipData;
         }
-        const { loc, next } = this.setIPLocation(g);
+        const { loc, next } = this.getIPLocation(g);
         // closeData.call(this);
         let data: ipData;
 
@@ -87,21 +91,21 @@ class LimQqwry {
                 start_ip: intToIP(ip),
                 start_ip_int: ip,
                 ...loc
-            }
+            } as ipData;
         } else {
             data = {
                 start_ip: "255.255.255.0",
                 start_ip_int: 4294967040,
                 country: "IANA",
                 isp: "保留地址"
-            }
+            } as ipData
         }
-        return withNext ? { data, next } : data;
+        return withNext ? { data, next } : ({ ...loc, ip: data.start_ip } as ipResponse);
     }
 
     toJson() {
-        let ip = 1
-        let result: ipData[] = []
+        let ip = 0;
+        let result: ipData[] = [];
 
         while (ip < 4294967295) {
             const { data, next } = this.searchIP(ip, true) as { data: ipData, next: number };
@@ -109,6 +113,26 @@ class LimQqwry {
                 throw new Error("next error");
             }
             result.push(data);
+            ip = next;
+        }
+
+        return result;
+    }
+
+    getStartIpIntlist() {
+        let ip = 0;
+        let result: number[] = [];
+
+        while (ip < 4294967295) {
+            const g = this.LocateIP(ip);
+            if (g == -1) {
+                throw new Error("'g' error when locate ip: " + ip);
+            }
+            const next = this.cmd.readUIntLE(this.cmd.readUIntLE(g + 4, 3), 4) + 1;
+            if (!next) {
+                throw new Error("'next' error when locate ip: " + ip);
+            }
+            result.push(ip);
             ip = next;
         }
 
@@ -148,7 +172,7 @@ class LimQqwry {
     }
 
     //获取IP地址对应区域
-    private setIPLocation(g: number) {
+    private getIPLocation(g: number) {
 
         // 拿到该ip的偏移量，即在记录区的起始位置
         // this.cmd.readUIntLE(g + 4, 3)
@@ -159,7 +183,7 @@ class LimQqwry {
         // 在这种格式下，终止IP后跟有一个重定向标志 0x01
         // 由于正常存储的字符串不会以0x01开头，因此可以与格式1区分开。
         let lx = this.cmd.readUIntLE(ipwz, 1),
-            loc: locData = {};
+            loc: locData = { country: "unknown", isp: "unknown" };
         if (lx == RedirectMode.Mode1) {
             //Country根据标识再判断
             ipwz = this.cmd.readUIntLE(ipwz + 1, 3); //读取国家偏移`
@@ -287,5 +311,32 @@ function toJson(path: string) {
     return instance.toJson();
 }
 
-export { toJson, ipToInt, intToIP };
+// 二分法查找起始ip
+function getStartIpInt(ip: number, result: number[]): number {
+    if (ip < 0 || ip > 4294967295) {
+        throw new Error("Invalid ip number");
+    }
+
+    const length = result.length;
+
+    if (length === 2) {
+        return ip >= result[1] ? result[1] : result[0];
+    }
+
+    const center = Math.trunc(length / 2);
+    const left = result[center - 1];
+    const right = result[center];
+
+    if (ip > left && ip < right) {
+        return left;
+    }
+    else if (ip === left || ip === right) {
+        return ip;
+    }
+    else {
+        return ip > left ? getStartIpInt(ip, result.slice(center)) : getStartIpInt(ip, result.slice(0, center));
+    }
+}
+
+export { toJson, ipToInt, intToIP, getStartIpInt };
 export default LimQqwry;
