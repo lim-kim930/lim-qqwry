@@ -12,6 +12,7 @@ declare class LimQqwry {
     version: undefined | string;
     private cmd;
     constructor(path: string);
+    private getVersion;
     searchIP(ip: number | string, withNext?: boolean): ipData | {
         int: number;
         ip: string;

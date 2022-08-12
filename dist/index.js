@@ -18,6 +18,21 @@ class LimQqwry {
         this.cmd = bufferCmd(path)();
         this.ipBegin = this.cmd.readUIntLE(0, 4);
         this.ipEnd = this.cmd.readUIntLE(4, 4);
+        this.version = this.getVersion();
+    }
+    getVersion() {
+        const g = this.LocateIP(4294967295);
+        const { loc } = this.setIPLocation(g);
+        let version = "v";
+        if (!loc.isp) {
+            version = "unknown";
+        }
+        else {
+            const firstTemp = loc.isp.split("年");
+            const secondTemp = firstTemp[1].split("月");
+            version += firstTemp[0] + secondTemp[0] + secondTemp[1].split("日")[0];
+        }
+        return version;
     }
     searchIP(ip, withNext = false) {
         if (typeof ip === "string") {
@@ -29,16 +44,16 @@ class LimQqwry {
         }
         const { loc, next } = this.setIPLocation(g);
         let data;
-        if (ip === 4294967040) {
+        if (ip < 4294967040) {
+            data = Object.assign({ start_ip: intToIP(ip), start_ip_int: ip }, loc);
+        }
+        else {
             data = {
                 start_ip: "255.255.255.0",
                 start_ip_int: 4294967040,
                 country: "IANA",
                 isp: "保留地址"
             };
-        }
-        else {
-            data = Object.assign({ start_ip: intToIP(ip), start_ip_int: ip }, loc);
         }
         return withNext ? { data, next } : data;
     }
