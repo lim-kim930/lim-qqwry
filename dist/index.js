@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.intToIP = exports.ipToInt = exports.toJson = void 0;
+exports.getStartIpInt = exports.intToIP = exports.ipToInt = exports.toJson = void 0;
 const fs_1 = __importDefault(require("fs"));
 const gbk_js_1 = require("gbk.js");
 var RedirectMode;
@@ -22,7 +22,7 @@ class LimQqwry {
     }
     getVersion() {
         const g = this.LocateIP(4294967295);
-        const { loc } = this.setIPLocation(g);
+        const { loc } = this.getIPLocation(g);
         let version = "v";
         if (!loc.isp) {
             version = "unknown";
@@ -40,9 +40,9 @@ class LimQqwry {
         }
         const g = this.LocateIP(ip);
         if (g == -1) {
-            return { int: ip, ip: intToIP(ip), Country: "", isp: "" };
+            return { start_ip: intToIP(ip), start_ip_int: ip, country: "unknown", isp: "unknown" };
         }
-        const { loc, next } = this.setIPLocation(g);
+        const { loc, next } = this.getIPLocation(g);
         let data;
         if (ip < 4294967040) {
             data = Object.assign({ start_ip: intToIP(ip), start_ip_int: ip }, loc);
@@ -55,10 +55,10 @@ class LimQqwry {
                 isp: "保留地址"
             };
         }
-        return withNext ? { data, next } : data;
+        return withNext ? { data, next } : Object.assign(Object.assign({}, loc), { ip: data.start_ip });
     }
     toJson() {
-        let ip = 1;
+        let ip = 0;
         let result = [];
         while (ip < 4294967295) {
             const { data, next } = this.searchIP(ip, true);
@@ -66,6 +66,23 @@ class LimQqwry {
                 throw new Error("next error");
             }
             result.push(data);
+            ip = next;
+        }
+        return result;
+    }
+    getStartIpIntlist() {
+        let ip = 0;
+        let result = [];
+        while (ip < 4294967295) {
+            const g = this.LocateIP(ip);
+            if (g == -1) {
+                throw new Error("'g' error when locate ip: " + ip);
+            }
+            const next = this.cmd.readUIntLE(this.cmd.readUIntLE(g + 4, 3), 4) + 1;
+            if (!next) {
+                throw new Error("'next' error when locate ip: " + ip);
+            }
+            result.push(ip);
             ip = next;
         }
         return result;
@@ -91,10 +108,10 @@ class LimQqwry {
         }
         return g;
     }
-    setIPLocation(g) {
+    getIPLocation(g) {
         const next = this.cmd.readUIntLE(this.cmd.readUIntLE(g + 4, 3), 4) + 1;
         let ipwz = this.cmd.readUIntLE(g + 4, 3) + 4;
-        let lx = this.cmd.readUIntLE(ipwz, 1), loc = {};
+        let lx = this.cmd.readUIntLE(ipwz, 1), loc = { country: "unknown", isp: "unknown" };
         if (lx == RedirectMode.Mode1) {
             ipwz = this.cmd.readUIntLE(ipwz + 1, 3);
             lx = this.cmd.readUIntLE(ipwz, 1);
@@ -212,4 +229,26 @@ function toJson(path) {
     return instance.toJson();
 }
 exports.toJson = toJson;
+function getStartIpInt(ip, result) {
+    if (ip < 0 || ip > 4294967295) {
+        throw new Error("Invalid ip number");
+    }
+    const length = result.length;
+    if (length === 2) {
+        return ip >= result[1] ? result[1] : result[0];
+    }
+    const center = Math.trunc(length / 2);
+    const left = result[center - 1];
+    const right = result[center];
+    if (ip > left && ip < right) {
+        return left;
+    }
+    else if (ip === left || ip === right) {
+        return ip;
+    }
+    else {
+        return ip > left ? getStartIpInt(ip, result.slice(center)) : getStartIpInt(ip, result.slice(0, center));
+    }
+}
+exports.getStartIpInt = getStartIpInt;
 exports.default = LimQqwry;

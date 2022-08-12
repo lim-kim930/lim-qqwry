@@ -1,10 +1,13 @@
 interface locData {
-    country?: string;
-    isp?: string;
+    country: string;
+    isp: string;
 }
 interface ipData extends locData {
     start_ip: string;
     start_ip_int: number;
+}
+interface ipResponse extends locData {
+    ip: string;
 }
 declare class LimQqwry {
     ipBegin: number;
@@ -13,28 +16,19 @@ declare class LimQqwry {
     private cmd;
     constructor(path: string);
     private getVersion;
-    searchIP(ip: number | string, withNext?: boolean): ipData | {
-        int: number;
-        ip: string;
-        Country: string;
-        isp: string;
-        data?: undefined;
-        next?: undefined;
-    } | {
+    searchIP(ip: number | string, withNext?: boolean): ipData | ipResponse | {
         data: ipData;
         next: number;
-        int?: undefined;
-        ip?: undefined;
-        Country?: undefined;
-        isp?: undefined;
     };
     toJson(): ipData[];
+    getStartIpIntlist(): number[];
     private LocateIP;
-    private setIPLocation;
+    private getIPLocation;
     private ReadISP;
 }
 declare function ipToInt(IP: string): number;
 declare function intToIP(int: number): string;
 declare function toJson(path: string): ipData[];
-export { toJson, ipToInt, intToIP };
+declare function getStartIpInt(ip: number, result: number[]): number;
+export { toJson, ipToInt, intToIP, getStartIpInt };
 export default LimQqwry;
