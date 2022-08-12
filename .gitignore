@@ -1,4 +1,4 @@
-test/data.json
+test/*.json
 test/*.dat
 
 # Logs
