@@ -3,8 +3,7 @@ interface locData {
     isp: string;
 }
 interface ipData extends locData {
-    start_ip: string;
-    start_ip_int: number;
+    start_ip: number;
 }
 interface ipResponse extends locData {
     ip: string;

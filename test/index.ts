@@ -22,7 +22,6 @@ const ip = ipToInt("223.5.5.5");
 console.time("time_get_startip");
 const int = getStartIpInt(ip, intList);
 console.timeEnd("time_get_startip");
-console.log(int);
 
 console.time("time_to_json");
 const result = toJson(datapath);

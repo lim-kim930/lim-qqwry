@@ -21,8 +21,7 @@ interface locData {
 }
 
 interface ipData extends locData {
-    start_ip: string;
-    start_ip_int: number;
+    start_ip: number;
 }
 
 interface ipResponse extends locData {
@@ -80,7 +79,7 @@ class LimQqwry {
         // g为该ip的索引在索引区的起始位置
         const g = this.LocateIP(ip);
         if (g == -1) {
-            return { start_ip: intToIP(ip), start_ip_int: ip, country: "unknown", isp: "unknown" } as ipData;
+            return { start_ip: ip, country: "unknown", isp: "unknown" } as ipData;
         }
         const { loc, next } = this.getIPLocation(g);
         // closeData.call(this);
@@ -88,19 +87,17 @@ class LimQqwry {
 
         if (ip < 4294967040) {
             data = {
-                start_ip: intToIP(ip),
-                start_ip_int: ip,
+                start_ip: ip,
                 ...loc
             } as ipData;
         } else {
             data = {
-                start_ip: "255.255.255.0",
-                start_ip_int: 4294967040,
+                start_ip: 4294967040,
                 country: "IANA",
                 isp: "保留地址"
             } as ipData
         }
-        return withNext ? { data, next } : ({ ...loc, ip: data.start_ip } as ipResponse);
+        return withNext ? { data, next } : ({ ...loc, ip: intToIP(data.start_ip) } as ipResponse);
     }
 
     toJson() {

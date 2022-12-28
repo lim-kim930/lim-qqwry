@@ -40,22 +40,21 @@ class LimQqwry {
         }
         const g = this.LocateIP(ip);
         if (g == -1) {
-            return { start_ip: intToIP(ip), start_ip_int: ip, country: "unknown", isp: "unknown" };
+            return { start_ip: ip, country: "unknown", isp: "unknown" };
         }
         const { loc, next } = this.getIPLocation(g);
         let data;
         if (ip < 4294967040) {
-            data = Object.assign({ start_ip: intToIP(ip), start_ip_int: ip }, loc);
+            data = Object.assign({ start_ip: ip }, loc);
         }
         else {
             data = {
-                start_ip: "255.255.255.0",
-                start_ip_int: 4294967040,
+                start_ip: 4294967040,
                 country: "IANA",
                 isp: "保留地址"
             };
         }
-        return withNext ? { data, next } : Object.assign(Object.assign({}, loc), { ip: data.start_ip });
+        return withNext ? { data, next } : Object.assign(Object.assign({}, loc), { ip: intToIP(data.start_ip) });
     }
     toJson() {
         let ip = 0;
