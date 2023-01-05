@@ -11,7 +11,7 @@
  * 
  * 抽离出文件读取部分的代码，使用Ts部分改写
  */
-
+// TODO: GBK内嵌
 import fs from "fs";
 import { decode } from "gbk.js"
 
