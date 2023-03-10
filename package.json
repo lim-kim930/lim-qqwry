@@ -1,6 +1,6 @@
 {
   "name": "lim-qqwry",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A queryer and json converter for CZIP'S qqwry.dat file.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
