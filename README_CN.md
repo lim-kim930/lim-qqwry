@@ -39,7 +39,7 @@ fs.writeFile("./data.json", JSON.stringify(result), () => {
 
 ```javascript
 let startIpIntList = null;
-queryIpInfo(ip) {
+async function queryIpInfo(ip) {
     if (!startIpIntList) {
         startIpIntList = new LimQqwry(path.join(process.cwd(), "data/qqwry.dat")).getStartIpIntList();
     }
