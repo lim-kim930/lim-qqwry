@@ -5,3 +5,5 @@ test/
 package-lock.json
 tsconfig.json
 .gitignore
+.gitattributes
+rollup.config.mjs

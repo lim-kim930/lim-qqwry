@@ -1,5 +1,7 @@
 # lim-qqwry
 
+<img src="https://img.shields.io/npm/v/lim-mailer" alt="lim-mailer"/>
+
 #### A module for CZIP address library `qqwry.dat`, which can perform isp query and convert `.dat` files into json files, which can be directly imported into MongoDB, etc.
 ### [Original Code Repository](https://github.com/cnwhy/lib-qqwry)
 
@@ -36,6 +38,8 @@ fs.writeFile("./data.json", JSON.stringify(result), () => {
 ```
 
 ### Note that when creating a new instance, the module will read the .dat file into the memory to improve the speed of subsequent operations (extreme speed mode in the original code), so if it is a one-time conversion instead of query services, please pay attention to the memory overflow problem.
+
+<br>
 
 ## Other
 ### Used with MondoDB, you can store `StartIpIntList` instead of qqwry.dat in memory all the time, get `queryIp` through the provided static method, and go to the database to query:
