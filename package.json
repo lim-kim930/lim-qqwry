@@ -6,7 +6,6 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "test": "node test/index.js",
-    "test-ts": "ts-node-dev test/index.ts",
     "build": "rollup -c",
     "build-tsc": "tsc"
   },

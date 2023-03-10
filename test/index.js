@@ -2,10 +2,10 @@ const LimQqwry = require("../lib");
 const path = require("path");
 const fs = require("fs");
 
-const datapath = path.join(__dirname, './qqwry.dat');
+const dataFilePath = path.join(__dirname, './qqwry.dat');
 
 const beforeMem = process.memoryUsage().arrayBuffers;
-const qqwry = new LimQqwry(datapath);
+const qqwry = new LimQqwry(dataFilePath);
 const memIncrease = (process.memoryUsage().arrayBuffers - beforeMem) / 1024 / 1024;
 console.log("Memory increased: ", memIncrease);
 
@@ -17,8 +17,8 @@ const ip = LimQqwry.ipToInt("223.5.5.5");
 const int = LimQqwry.getStartIpInt(ip, intList);
 console.log(int);
 
-const result = qqwry.toJson(datapath);
-fs.writeFile("./data.json", JSON.stringify(result), error => {
+const result = qqwry.toJson();
+fs.writeFile(path.join(__dirname, "./data.json"), JSON.stringify(result), error => {
     if (error) {
         console.error(error);
     }
