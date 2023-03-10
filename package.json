@@ -1,7 +1,7 @@
 {
   "name": "lim-qqwry",
-  "version": "0.1.4",
-  "description": "A json converter for qqwry.dat file.",
+  "version": "2.0.0",
+  "description": "A queryer and json converter for CZIP'S qqwry.dat file.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -13,6 +13,8 @@
   "keywords": [
     "node",
     "qqwry",
+    "ip",
+    "czip",
     "cz"
   ],
   "repository": {
