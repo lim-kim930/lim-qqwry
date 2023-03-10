@@ -1,6 +1,6 @@
 # lim-qqwry
 
-<img src="https://img.shields.io/npm/v/lim-mailer" alt="lim-mailer"/>
+<img src="https://img.shields.io/npm/v/lim-qqwry" alt="lim-qqwry"/>
 
 #### 一个针对纯真IP地址库`qqwry.dat`的模块, 可以进行isp查询和将`.dat`文件转成json文件, 以便可以直接导入MongoDB等.
 ### [原始代码仓库](https://github.com/cnwhy/lib-qqwry)
