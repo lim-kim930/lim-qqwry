@@ -1,6 +1,6 @@
 # lim-qqwry
 
-<img src="https://img.shields.io/npm/v/lim-mailer" alt="lim-mailer"/>
+<img src="https://img.shields.io/npm/v/lim-qqwry" alt="lim-qqwry"/>
 
 #### A module for CZIP address library `qqwry.dat`, which can perform isp query and convert `.dat` files into json files, which can be directly imported into MongoDB, etc.
 ### [Original Code Repository](https://github.com/cnwhy/lib-qqwry)
