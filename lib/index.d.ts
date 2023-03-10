@@ -21,13 +21,14 @@ declare class LimQqwry {
     };
     toJson(): ipData[];
     getStartIpIntList(): number[];
+    static getStartIpInt(ip: number, result: number[]): number;
+    static intToIP(int: number): string;
+    static ipToInt(IP: string): number;
+    private bufferCmd;
+    private GetMiddleOffset;
     private LocateIP;
     private getIPLocation;
     private ReadISP;
 }
-declare function ipToInt(IP: string): number;
-declare function intToIP(int: number): string;
-declare function toJson(path: string): ipData[];
-declare function getStartIpInt(ip: number, result: number[]): number;
-export { toJson, ipToInt, intToIP, getStartIpInt };
-export default LimQqwry;
+
+export { LimQqwry as default };

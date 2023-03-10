@@ -1,6 +1,6 @@
-import LimQqwry from "../lib";
-import path from "path";
-import fs from "fs";
+const LimQqwry = require("../lib");
+const path = require("path");
+const fs = require("fs");
 
 const datapath = path.join(__dirname, './qqwry.dat');
 
@@ -17,7 +17,7 @@ const ip = LimQqwry.ipToInt("223.5.5.5");
 const int = LimQqwry.getStartIpInt(ip, intList);
 console.log(int);
 
-const result = qqwry.toJson();
+const result = qqwry.toJson(datapath);
 fs.writeFile("./data.json", JSON.stringify(result), error => {
     if (error) {
         console.error(error);
