@@ -11,7 +11,7 @@
  * 
  * 抽离出文件读取部分的代码，使用Ts部分改写
  */
-
+// TODO: GBK内嵌
 import fs from "fs";
 import { decode } from "gbk.js"
 
@@ -21,8 +21,7 @@ interface locData {
 }
 
 interface ipData extends locData {
-    start_ip: string;
-    start_ip_int: number;
+    start_ip: number;
 }
 
 interface ipResponse extends locData {
@@ -42,7 +41,7 @@ enum RedirectMode {
 const IP_RECORD_LENGTH = 7;
 const IP_REGEXP = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
 
-class LimQqwry {
+export default class LimQqwry {
     ipBegin: number;
     ipEnd: number;
     version: undefined | string;
@@ -53,7 +52,7 @@ class LimQqwry {
     };
     constructor(path: string) {
         // 闭包
-        this.cmd = bufferCmd(path)();
+        this.cmd = this.bufferCmd(path)();
         this.ipBegin = this.cmd.readUIntLE(0, 4);
         this.ipEnd = this.cmd.readUIntLE(4, 4);
         this.version = this.getVersion();
@@ -75,12 +74,12 @@ class LimQqwry {
 
     searchIP(ip: number | string, withNext = false) {
         if (typeof ip === "string") {
-            ip = ipToInt(ip);
+            ip = LimQqwry.ipToInt(ip);
         }
         // g为该ip的索引在索引区的起始位置
         const g = this.LocateIP(ip);
         if (g == -1) {
-            return { start_ip: intToIP(ip), start_ip_int: ip, country: "unknown", isp: "unknown" } as ipData;
+            return { start_ip: ip, country: "unknown", isp: "unknown" } as ipData;
         }
         const { loc, next } = this.getIPLocation(g);
         // closeData.call(this);
@@ -88,19 +87,17 @@ class LimQqwry {
 
         if (ip < 4294967040) {
             data = {
-                start_ip: intToIP(ip),
-                start_ip_int: ip,
+                start_ip: ip,
                 ...loc
             } as ipData;
         } else {
             data = {
-                start_ip: "255.255.255.0",
-                start_ip_int: 4294967040,
+                start_ip: 4294967040,
                 country: "IANA",
                 isp: "保留地址"
             } as ipData
         }
-        return withNext ? { data, next } : ({ ...loc, ip: data.start_ip } as ipResponse);
+        return withNext ? { data, next } : ({ ...loc, ip: LimQqwry.intToIP(data.start_ip) } as ipResponse);
     }
 
     toJson() {
@@ -139,11 +136,108 @@ class LimQqwry {
         return result;
     }
 
+    // 二分法查找起始ip
+    public static getStartIpInt(ip: number, result: number[]): number {
+        if (ip < 0 || ip > 4294967295) {
+            throw new Error("Invalid ip number");
+        }
+
+        const length = result.length;
+
+        if (length === 2) {
+            return ip >= result[1] ? result[1] : result[0];
+        }
+
+        const center = Math.trunc(length / 2);
+        const left = result[center - 1];
+        const right = result[center];
+
+        if (ip > left && ip < right) {
+            return left;
+        }
+        else if (ip === left || ip === right) {
+            return ip;
+        }
+        else {
+            return ip > left ? this.getStartIpInt(ip, result.slice(center)) : this.getStartIpInt(ip, result.slice(0, center));
+        }
+    }
+
+    public static intToIP(int: number) {
+        if (int < 0 || int > 0xffffffff) {
+            throw 'The IP number is not normal! >> ' + int;
+        }
+        return (
+            (int >>> 24) +
+            '.' +
+            ((int >>> 16) & 0xff) +
+            '.' +
+            ((int >>> 8) & 0xff) +
+            '.' +
+            ((int >>> 0) & 0xff)
+        );
+    }
+
+    public static ipToInt(IP: string) {
+        const result = IP_REGEXP.exec(IP);
+        let ip: number;
+        if (result) {
+            const ip_Arr = result.slice(1);
+            ip =
+                ((parseInt(ip_Arr[0]) << 24) |
+                    (parseInt(ip_Arr[1]) << 16) |
+                    (parseInt(ip_Arr[2]) << 8) |
+                    parseInt(ip_Arr[3])) >>>
+                0;
+        } else if (/^\d+$/.test(IP) && (ip = parseInt(IP)) >= 0 && ip <= 0xffffffff) {
+            ip = +IP;
+        } else {
+            throw 'The IP address is not normal! >> ' + IP;
+        }
+        return ip;
+    }
+
+    private bufferCmd(path: string) {
+        const buffer = fs.readFileSync(path);
+        const max = buffer.length;
+        const api = {
+            readBuffer: function (start: number, length: number) {
+                start = start || 0;
+                length = length || 1;
+                return buffer.slice(start, start + length);
+            },
+            readUIntLE: function (start: number, length: number) {
+                start = start || 0;
+                length = length < 1 ? 1 : length > 6 ? 6 : length;
+                return buffer.readUIntLE(start, length);
+            },
+            getStringByteArray: function (start: number) {
+                const B = start || 0;
+                const toarr = [];
+                for (let i = B; i < max; i++) {
+                    const s = buffer[i];
+                    if (s === 0) break;
+                    toarr.push(s);
+                }
+                return toarr;
+            }
+        };
+        return () => {
+            return api;
+        };
+    }
+
+    // 取得begin和end中间的偏移(用于2分法查询);
+    private GetMiddleOffset(begin: number, end: number, recordLength: number) {
+        const records = (((end - begin) / recordLength) >> 1) * recordLength + begin;
+        return records ^ begin ? records : records + recordLength;
+    }
+
     //2分法查找指定的IP偏移
     private LocateIP(ip: number) {
         let g: number, temp;
         for (let b = this.ipBegin, e = this.ipEnd; b < e;) {
-            g = GetMiddleOffset(b, e, IP_RECORD_LENGTH); //获取中间位置
+            g = this.GetMiddleOffset(b, e, IP_RECORD_LENGTH); //获取中间位置
             temp = this.cmd.readUIntLE(g, 4);
 
             if (ip > temp) {
@@ -235,108 +329,3 @@ class LimQqwry {
         return decode(array);
     }
 }
-
-function bufferCmd(path: string) {
-    const buffer = fs.readFileSync(path);
-    const max = buffer.length;
-    const api = {
-        readBuffer: function (start: number, length: number) {
-            start = start || 0;
-            length = length || 1;
-            return buffer.slice(start, start + length);
-        },
-        readUIntLE: function (start: number, length: number) {
-            start = start || 0;
-            length = length < 1 ? 1 : length > 6 ? 6 : length;
-            return buffer.readUIntLE(start, length);
-        },
-        getStringByteArray: function (start: number) {
-            const B = start || 0;
-            const toarr = [];
-            for (let i = B; i < max; i++) {
-                const s = buffer[i];
-                if (s === 0) break;
-                toarr.push(s);
-            }
-            return toarr;
-        }
-    };
-    return function bufferCmd() {
-        return api;
-    };
-}
-
-// 取得begin和end中间的偏移(用于2分法查询);
-function GetMiddleOffset(begin: number, end: number, recordLength: number) {
-    const records = (((end - begin) / recordLength) >> 1) * recordLength + begin;
-    return records ^ begin ? records : records + recordLength;
-}
-
-function ipToInt(IP: string) {
-    const result = IP_REGEXP.exec(IP);
-    let ip: number;
-    if (result) {
-        const ip_Arr = result.slice(1);
-        ip =
-            ((parseInt(ip_Arr[0]) << 24) |
-                (parseInt(ip_Arr[1]) << 16) |
-                (parseInt(ip_Arr[2]) << 8) |
-                parseInt(ip_Arr[3])) >>>
-            0;
-    } else if (/^\d+$/.test(IP) && (ip = parseInt(IP)) >= 0 && ip <= 0xffffffff) {
-        ip = +IP;
-    } else {
-        throw 'The IP address is not normal! >> ' + IP;
-    }
-    return ip;
-}
-
-function intToIP(int: number) {
-    if (int < 0 || int > 0xffffffff) {
-        throw 'The IP number is not normal! >> ' + int;
-    }
-    return (
-        (int >>> 24) +
-        '.' +
-        ((int >>> 16) & 0xff) +
-        '.' +
-        ((int >>> 8) & 0xff) +
-        '.' +
-        ((int >>> 0) & 0xff)
-    );
-}
-
-function toJson(path: string) {
-    const instance = new LimQqwry(path);
-    return instance.toJson();
-}
-
-// 二分法查找起始ip
-function getStartIpInt(ip: number, result: number[]): number {
-    if (ip < 0 || ip > 4294967295) {
-        throw new Error("Invalid ip number");
-    }
-
-    const length = result.length;
-
-    if (length === 2) {
-        return ip >= result[1] ? result[1] : result[0];
-    }
-
-    const center = Math.trunc(length / 2);
-    const left = result[center - 1];
-    const right = result[center];
-
-    if (ip > left && ip < right) {
-        return left;
-    }
-    else if (ip === left || ip === right) {
-        return ip;
-    }
-    else {
-        return ip > left ? getStartIpInt(ip, result.slice(center)) : getStartIpInt(ip, result.slice(0, center));
-    }
-}
-
-export { toJson, ipToInt, intToIP, getStartIpInt };
-export default LimQqwry;
