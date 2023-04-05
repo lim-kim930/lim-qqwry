@@ -42,7 +42,7 @@ fs.writeFile("./data.json", JSON.stringify(result), () => {
 <br>
 
 ## Other
-### Used with MondoDB, you can store `StartIpIntList` instead of qqwry.dat in memory all the time, get `queryIp` through the provided static method, and go to the database to query:
+### Used with MongoDB, you can store `StartIpIntList` instead of qqwry.dat in memory all the time, get `queryIp` through the provided static method, and go to the database to query:
 
 ```javascript
 let startIpIntList = null;
