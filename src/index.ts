@@ -41,7 +41,7 @@ enum RedirectMode {
 const IP_RECORD_LENGTH = 7;
 const IP_REGEXP = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
 
-export default class LimQqwry {
+class LimQqwry {
     ipBegin: number;
     ipEnd: number;
     version: undefined | string;
@@ -329,3 +329,4 @@ export default class LimQqwry {
         return decode(array);
     }
 }
+export = LimQqwry;
