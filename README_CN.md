@@ -39,7 +39,7 @@ fs.writeFile("./data.json", JSON.stringify(result), () => {
 <br>
 
 ## 其他
-### 配合MondoDB使用, 可以不将qqwry.dat一直放在内存里, 而是存储`startIpIntList`, 通过提供的static方法, 获得`queryIp`, 前往数据库查询:
+### 配合MongoDB使用, 可以不将qqwry.dat一直放在内存里, 而是存储`startIpIntList`, 通过提供的static方法, 获得`queryIp`, 前往数据库查询:
 
 ```javascript
 let startIpIntList = null;

@@ -30,5 +30,4 @@ declare class LimQqwry {
     private getIPLocation;
     private ReadISP;
 }
-
-export { LimQqwry as default };
+export = LimQqwry;
