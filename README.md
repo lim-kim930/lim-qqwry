@@ -56,3 +56,5 @@ async function queryIpInfo(ip) {
     return { ip, country: data.country, isp: data.isp };
 }
 ```
+
+## [CHANGELOG](./CHANGELOG.md)

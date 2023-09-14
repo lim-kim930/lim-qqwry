@@ -1,4 +1,4 @@
-const LimQqwry = require("../lib");
+const LimQqwry = require("../dist/index.cjs");
 const path = require("path");
 const fs = require("fs");
 

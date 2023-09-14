@@ -1,5 +1,7 @@
-import fs from 'fs';
-import { decode } from 'gbk.js';
+'use strict';
+
+var fs = require('fs');
+var gbk_js = require('gbk.js');
 
 var RedirectMode;
 (function (RedirectMode) {
@@ -202,25 +204,25 @@ class LimQqwry {
             let Gjbut;
             if (lx == RedirectMode.Mode2) {
                 Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
-                loc.country = decode(Gjbut);
+                loc.country = gbk_js.decode(Gjbut);
                 ipwz = ipwz + 4;
             }
             else {
                 Gjbut = this.cmd.getStringByteArray(ipwz);
-                loc.country = decode(Gjbut);
+                loc.country = gbk_js.decode(Gjbut);
                 ipwz += Gjbut.length + 1;
             }
             loc.isp = this.ReadISP(ipwz);
         }
         else if (lx == RedirectMode.Mode2) {
             const Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
-            loc.country = decode(Gjbut);
+            loc.country = gbk_js.decode(Gjbut);
             loc.isp = this.ReadISP(ipwz + 4);
         }
         else {
             const Gjbut = this.cmd.getStringByteArray(ipwz);
             ipwz += Gjbut.length + 1;
-            loc.country = decode(Gjbut);
+            loc.country = gbk_js.decode(Gjbut);
             loc.isp = this.ReadISP(ipwz);
         }
         return { loc, next };
@@ -237,8 +239,8 @@ class LimQqwry {
         if (array.length === 9 && array[3] === 56) {
             return "Unknown";
         }
-        return decode(array);
+        return gbk_js.decode(array);
     }
 }
 
-export { LimQqwry as default };
+module.exports = LimQqwry;

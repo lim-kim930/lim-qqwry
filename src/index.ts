@@ -12,26 +12,10 @@
  * 抽离出文件读取部分的代码，使用Ts部分改写
  */
 // TODO: GBK内嵌
+// TODO: 释放buffer内存
 import fs from "fs";
 import { decode } from "gbk.js"
-
-interface locData {
-    country: string;
-    isp: string
-}
-
-interface ipData extends locData {
-    start_ip: number;
-}
-
-interface ipResponse extends locData {
-    ip: string;
-}
-
-// interface searchIP {
-//     (ip: string, withNext: false): ipData;
-//     (ip: string, withNext: true): { data: ipData, next: number };
-// }
+import { IPData, IPInfo, IntIPData } from "./typings/index.js";
 
 enum RedirectMode {
     Mode1 = 1,
@@ -72,40 +56,46 @@ class LimQqwry {
         return version;
     }
 
-    searchIP(ip: number | string, withNext = false) {
+    private getIPData(ip: number | string, withNext: false): IPData;
+    private getIPData(ip: number | string, withNext: true): { data: IntIPData, next: number };
+    private getIPData(ip: number | string, withNext: boolean) {
         if (typeof ip === "string") {
             ip = LimQqwry.ipToInt(ip);
         }
         // g为该ip的索引在索引区的起始位置
         const g = this.LocateIP(ip);
         if (g == -1) {
-            return { start_ip: ip, country: "unknown", isp: "unknown" } as ipData;
+            return { start_ip: ip, country: "unknown", isp: "unknown" } as IntIPData;
         }
         const { loc, next } = this.getIPLocation(g);
         // closeData.call(this);
-        let data: ipData;
+        let data: IntIPData;
 
         if (ip < 4294967040) {
             data = {
                 start_ip: ip,
                 ...loc
-            } as ipData;
+            } as IntIPData;
         } else {
             data = {
                 start_ip: 4294967040,
                 country: "IANA",
                 isp: "保留地址"
-            } as ipData
+            } as IntIPData
         }
-        return withNext ? { data, next } : ({ ...loc, ip: LimQqwry.intToIP(data.start_ip) } as ipResponse);
+        return withNext ? { data, next } : ({ ...loc, ip: LimQqwry.intToIP(data.start_ip) } as IPData);
+    }
+
+    searchIP(ip: number | string) {
+        return this.getIPData(ip, false);
     }
 
     toJson() {
         let ip = 0;
-        let result: ipData[] = [];
+        let result: IntIPData[] = [];
 
         while (ip < 4294967295) {
-            const { data, next } = this.searchIP(ip, true) as { data: ipData, next: number };
+            const { data, next } = this.getIPData(ip, true) as { data: IntIPData, next: number };
             if (!next) {
                 throw new Error("next error");
             }
@@ -277,7 +267,7 @@ class LimQqwry {
         // 在这种格式下，终止IP后跟有一个重定向标志 0x01
         // 由于正常存储的字符串不会以0x01开头，因此可以与格式1区分开。
         let lx = this.cmd.readUIntLE(ipwz, 1),
-            loc: locData = { country: "unknown", isp: "unknown" };
+            loc: IPInfo = { country: "unknown", isp: "unknown" };
         if (lx == RedirectMode.Mode1) {
             //Country根据标识再判断
             ipwz = this.cmd.readUIntLE(ipwz + 1, 3); //读取国家偏移`
@@ -329,4 +319,7 @@ class LimQqwry {
         return decode(array);
     }
 }
-export = LimQqwry;
+
+export { IPData, IntIPData, IPInfo };
+
+export default LimQqwry;

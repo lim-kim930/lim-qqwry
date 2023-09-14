@@ -1,13 +1,14 @@
-interface locData {
+interface IPInfo {
     country: string;
     isp: string;
 }
-interface ipData extends locData {
+interface IntIPData extends IPInfo {
     start_ip: number;
 }
-interface ipResponse extends locData {
+interface IPData extends IPInfo {
     ip: string;
 }
+
 declare class LimQqwry {
     ipBegin: number;
     ipEnd: number;
@@ -15,11 +16,9 @@ declare class LimQqwry {
     private cmd;
     constructor(path: string);
     private getVersion;
-    searchIP(ip: number | string, withNext?: boolean): ipData | ipResponse | {
-        data: ipData;
-        next: number;
-    };
-    toJson(): ipData[];
+    private getIPData;
+    searchIP(ip: number | string): IPData;
+    toJson(): IntIPData[];
     getStartIpIntList(): number[];
     static getStartIpInt(ip: number, result: number[]): number;
     static intToIP(int: number): string;
@@ -30,4 +29,5 @@ declare class LimQqwry {
     private getIPLocation;
     private ReadISP;
 }
-export = LimQqwry;
+
+export { IPData, IPInfo, IntIPData, LimQqwry as default };
