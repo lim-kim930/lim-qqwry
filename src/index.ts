@@ -14,7 +14,7 @@
 // TODO: GBK内嵌
 // TODO: 释放buffer内存
 import fs from "fs";
-import { decode } from "gbk.js"
+import pkg from 'gbk.js';
 import { IPData, IPInfo, IntIPData } from "./typings/index.js";
 
 enum RedirectMode {
@@ -24,6 +24,7 @@ enum RedirectMode {
 
 const IP_RECORD_LENGTH = 7;
 const IP_REGEXP = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+const { decode } = pkg;
 
 class LimQqwry {
     ipBegin: number;

@@ -1,7 +1,7 @@
 'use strict';
 
 var fs = require('fs');
-var gbk_js = require('gbk.js');
+var pkg = require('gbk.js');
 
 var RedirectMode;
 (function (RedirectMode) {
@@ -10,6 +10,7 @@ var RedirectMode;
 })(RedirectMode || (RedirectMode = {}));
 const IP_RECORD_LENGTH = 7;
 const IP_REGEXP = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+const { decode } = pkg;
 class LimQqwry {
     constructor(path) {
         this.cmd = this.bufferCmd(path)();
@@ -204,25 +205,25 @@ class LimQqwry {
             let Gjbut;
             if (lx == RedirectMode.Mode2) {
                 Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
-                loc.country = gbk_js.decode(Gjbut);
+                loc.country = decode(Gjbut);
                 ipwz = ipwz + 4;
             }
             else {
                 Gjbut = this.cmd.getStringByteArray(ipwz);
-                loc.country = gbk_js.decode(Gjbut);
+                loc.country = decode(Gjbut);
                 ipwz += Gjbut.length + 1;
             }
             loc.isp = this.ReadISP(ipwz);
         }
         else if (lx == RedirectMode.Mode2) {
             const Gjbut = this.cmd.getStringByteArray(this.cmd.readUIntLE(ipwz + 1, 3));
-            loc.country = gbk_js.decode(Gjbut);
+            loc.country = decode(Gjbut);
             loc.isp = this.ReadISP(ipwz + 4);
         }
         else {
             const Gjbut = this.cmd.getStringByteArray(ipwz);
             ipwz += Gjbut.length + 1;
-            loc.country = gbk_js.decode(Gjbut);
+            loc.country = decode(Gjbut);
             loc.isp = this.ReadISP(ipwz);
         }
         return { loc, next };
@@ -239,7 +240,7 @@ class LimQqwry {
         if (array.length === 9 && array[3] === 56) {
             return "Unknown";
         }
-        return gbk_js.decode(array);
+        return decode(array);
     }
 }
 

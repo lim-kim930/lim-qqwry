@@ -1,14 +1,17 @@
 {
   "name": "lim-qqwry",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "A queryer and json converter for CZIP'S qqwry.dat file.",
   "module": "./lib/index.js",
+  "main": "lib/index.js",
   "exports": {
     ".": {
       "types": "./index.d.ts",
-      "require": "./dist/index.cjs"
-    },
-    "./package.json": "./package.json"
+      "default": {
+        "require": "./dist/index.cjs",
+        "default": "./lib/index.js"
+      }
+    }
   },
   "types": "index.d.ts",
   "type": "module",
